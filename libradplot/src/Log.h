@@ -3,6 +3,8 @@
 namespace radplot
 {
 
+#define LOG_MODULE_FIGURE       (1 << 0)
+
 enum class LogLevel
 {
     Trace = 0,
@@ -17,13 +19,14 @@ enum class LogLevel
 class Log
 {
 public:
-    static void LogLine(const char* module, LogLevel level, const char* fmt...);
+    static void LogLine(unsigned int module, LogLevel level, const char* fmt...);
 };
 
+
 #ifndef LOG_MODULE
-#error "LOG_MODULE must be defined prior to #including Log.h"
+#define LOG_MODULE(module)  static unsigned int s_module = module;
 #endif
 
-#define LOG_INFO(...) Log::LogLine(LOG_MODULE, LogLevel::Info, __VA_ARGS__)
+#define LOG_INFO(...) Log::LogLine(s_module, LogLevel::Info, __VA_ARGS__)
 
 }

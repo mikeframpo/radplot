@@ -2,13 +2,12 @@
 // 
 // Copyright 2023 Mike Frampton
 //
-#define LOG_MODULE "Figure"
-#include "Log.h"
-
 #include "Radplot.h"
 
 #include <iostream>
 #include <format>
+
+LOG_MODULE(LOG_MODULE_FIGURE)
 
 namespace radplot
 {
