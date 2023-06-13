@@ -7,10 +7,10 @@
 #include <iostream>
 #include <format>
 
-LOG_MODULE(LOG_MODULE_FIGURE)
-
 namespace radplot
 {
+
+LOG_MODULE(LogModule::Figure);
 
 struct Figure::FigureData
 {
@@ -20,6 +20,10 @@ struct Figure::FigureData
 Figure::Figure() :
     _pdata(nullptr)
 {
+    // TODO: move this to an API
+    LogSetLevel(LogLevel::Info);
+    LogEnableModule(static_cast<LogModule>(~0));
+
     LOG_INFO("New Figure");
 
     _pdata = new FigureData();

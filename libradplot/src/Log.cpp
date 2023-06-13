@@ -1,43 +1,65 @@
 
 #include "Radplot.h"
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <cstdio>
+#include "Log.h"
 
 namespace radplot
 {
+
+unsigned int _moduleMask = 0;
+LogLevel _level = LogLevel::Off;
+
+const char* GetModuleName(LogModule module)
+{
+    switch (module)
+    {
+    case LogModule::Figure:
+        return "Figure";
+    case LogModule::Window:
+        return "Window";
+    default:
+        return "Unknown";
+    }
+}
 
 const char* GetLevelStr(LogLevel level)
 {
     switch (level)
     {
     case LogLevel::Error:
-        return "Error";
+        return "[Error]";
     case LogLevel::Info:
-        return "Info";
+        return "[Info]";
     case LogLevel::Debug:
-        return "Debug";
+        return "[Debug]";
     case LogLevel::Trace:
-        return "Trace";
+        return "[Trace]";
     default:
-        return "Unknown";
+        return "[Unknown]";
     }
 }
 
-void Log::LogLine(unsigned int module, LogLevel level, const char *fmt...)
+void LogSetLevel(LogLevel level)
 {
-    // TODO: only print for enabled module masks
-    // TODO: map module masks to module strings, pass mapping to init function or something
+    _level = level;
+}
 
-    static LogLevel _current_level = LogLevel::Info;
+void LogEnableModule(LogModule module)
+{
+    _moduleMask |= static_cast<unsigned int>(module);
+}
 
-    if (_current_level != LogLevel::Off && level >= _current_level)
+void LogLineImpl(LogModule module, LogLevel level, const char *format...)
+{
+    if (_level != LogLevel::Off && level >= _level)
     {
-        printf("%d:%s: ", module, GetLevelStr(level));
+        printf("%s:%s: ", GetLevelStr(level), GetModuleName(module));
 
         va_list(args);
-        va_start(args, fmt);
-        vprintf(fmt, args);
+        va_start(args, format);
+        vprintf(format, args);
 
         printf("\n");
     }
