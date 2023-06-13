@@ -20,9 +20,9 @@ struct Figure::FigureData
 Figure::Figure() :
     _pdata(nullptr)
 {
-    // TODO: move this to an API
+    // TODO: move this to an API or defines
     LogSetLevel(LogLevel::Info);
-    LogEnableModule(static_cast<LogModule>(~0));
+    LogEnableAllModules();
 
     LOG_INFO("New Figure");
 

@@ -3,18 +3,10 @@
 #include <cstdarg>
 #include <iostream>
 
-namespace radplot
-{
+namespace radplot {
 
-// TODO: look into X macros for generating strings
-enum class LogModule
-{
-    Figure      = (1 << 0),
-    Window      = (1 << 1)
-};
-
-enum class LogLevel
-{
+// Log Levels
+enum class LogLevel {
     Trace = 0,
     Debug,
     Info,
@@ -23,50 +15,57 @@ enum class LogLevel
     Off,
 };
 
+// Module definitions
+#define LOG_MODULES \
+    X(Figure, 0)    \
+    X(Window, 1)
+
+// Generate bitfields for each module
+#define X(module, mask) module = (1 << (mask)),
+enum class LogModule {
+    LOG_MODULES
+};
+#undef X
+
+#ifdef LOG_MODULE
+#error "LOG_MODULE should only be defined once in each compilation unit."
+#endif
+
+// Define compilation unit as a module, passing a LogModule::Module value
+#define LOG_MODULE(module) using Log = radplot::Logger<module>;
+
+// Convenience logging macros.
+#define LOG_TRACE(format, ...) Log::LogLine(LogLevel::Trace, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_DEBUG(format, ...) Log::LogLine(LogLevel::Debug, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_INFO(format, ...) Log::LogLine(LogLevel::Info, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_ERROR(format, ...) Log::LogLine(LogLevel::Error, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+
+// Public functions
+void LogSetLevel(LogLevel level);
+void LogEnableModule(LogModule module);
+void LogEnableAllModules();
+
+// Implementation
+
 extern unsigned int _moduleMask;
 extern LogLevel _level;
 
-void LogSetLevel(LogLevel level);
-void LogEnableModule(LogModule module);
-void LogLineImpl(LogModule module, LogLevel level, const char* format...);
-
-const char* GetModuleName(LogModule module);
+void LogLineImpl(LogModule module, LogLevel level, const char* format, va_list args);
 const char* GetLevelStr(LogLevel level);
+const char* GetModuleName(LogModule module);
 
 template <LogModule module>
-class Logger
-{
+class Logger {
 public:
-    static void LogLine(LogLevel level, const char* format...)
-    {
-        // TODO: perhaps just pass the va_list to the log function?
-        if (_moduleMask & static_cast<unsigned int>(module) &&
-            _level != LogLevel::Off &&
-            level >= _level)
-        {
-            char buffer[256];
-            char* pbuf = buffer;
-
-            int offs = sprintf(pbuf, "%s:%s:", GetLevelStr(level), GetModuleName(module));
-            pbuf += offs;
-
+    static void LogLine(LogLevel level, const char* format...) {
+        if (_moduleMask & static_cast<unsigned int>(module)) {
             va_list args;
             va_start(args, format);
-            vsnprintf(pbuf, sizeof(buffer) - offs, format, args);
 
-            std::cout << buffer << '\n';
+            LogLineImpl(module, level, format, args);
+            va_end(args);
         }
     }
 };
 
-
-#ifdef LOG_MODULE
-#error "LOG_MODULE should only be defined once."
-#endif
-
-#define LOG_MODULE(module)  using Log = radplot::Logger<module>;
-
-#define LOG_INFO(...) Log::LogLine(LogLevel::Info, __VA_ARGS__)
-#define LOG_ERROR(...) Log::LogLine(LogLevel::Error, __VA_ARGS__)
-
-}
+}  // namespace radplot
