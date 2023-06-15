@@ -51,6 +51,11 @@ void Figure::DrawCube(Vec3 centre) {
     //  Uniforms
     // Pass data to the Renderer somehow - command queue? call directly with locking
 
+    // Placeholder
+    float vertices[] = {1.0f, 1.0f,  1.0f,  -1.0f, 1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,
+                        1.0f, -1.0f, -1.0f, 1.0f,  1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f};
+    VertexBuffer buffer(vertices, std::size(vertices) * sizeof(vertices[0]), VBDataUsage::StaticDraw);
+
     // I think that many objects could be drawn with the same buffers but different uniforms e.g. drawing
     // many points at different locations (transform in uniform). So we might want to cache buffers.
 }

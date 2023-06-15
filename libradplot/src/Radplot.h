@@ -6,6 +6,7 @@
 #include "Window.h"
 #include "Log.h"
 #include "Renderer.h"
+#include "Buffer.h"
 
 #include "radplot/Figure.h"
 #include "radplot/Math.h"
