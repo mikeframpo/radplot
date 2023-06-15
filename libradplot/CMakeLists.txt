@@ -4,6 +4,7 @@ add_library(radplot SHARED
     src/Log.cpp
     src/Error.cpp
     src/Window.cpp
+    src/Renderer.cpp
 )
 
 # Public interface headers are defined in the include/ directory

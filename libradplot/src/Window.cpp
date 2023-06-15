@@ -3,24 +3,45 @@
 #include <GL/glew.h>
 #include "Window.h"
 
+#include "Radplot.h"
+
 #include <GLFW/glfw3.h>
 #include <unistd.h>
 
 #include <format>
-
-#include "Radplot.h"
+#include <atomic>
 
 namespace radplot {
 
 LOG_MODULE(LogModule::Window);
 
-
 void GLFWErrorHandler(int errorCode, const char* description) {
     LOG_ERROR("GLFW error 0x%x, %s\n", errorCode, description);
 }
 
+void GLAPIENTRY GLErrorHandler(GLenum source,
+                               GLenum type,
+                               GLuint id,
+                               GLenum severity,
+                               GLsizei length,
+                               const GLchar* message,
+                               const void* userParam) {
+    if (type == GL_DEBUG_TYPE_ERROR) {
+        fprintf(stderr, "GL Error: source: 0x%x, type = 0x%x, severity = 0x%x\n\tmessage = %s\n", source, type,
+                severity, message);
+
+#ifdef EXIT_ON_GL_ERROR
+        throw PP3Exception("PP3 GL Error");
+#endif
+    }
+}
+
 Window::Window() : _pwindow(nullptr) {
-    if (!glfwInit()) throw RadException("Failed to initialise GLFW");
+    LOG_INFO("New Window");
+
+    // Additional calls to glfwInit return immediately.
+    if (!glfwInit())
+        throw RadException("Failed to initialise GLFW");
 
     glfwSetErrorCallback(GLFWErrorHandler);
     // Set the window hints.
@@ -28,19 +49,40 @@ Window::Window() : _pwindow(nullptr) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    _pwindow = glfwCreateWindow(1024, 768, "Figure X", nullptr, nullptr);
-    if (!_pwindow) throw RadException("GLFW window creation failed.");
+    _pwindow = glfwCreateWindow(1024, 768, "radplot", nullptr, nullptr);
+    if (!_pwindow)
+        throw RadException("GLFW window creation failed.");
 
     glfwMakeContextCurrent(_pwindow);
 
-    GLenum err = glewInit();
-    if (err != GLEW_OK) throw RadException(std::format("GLEW Init failed. Err: {}", err));
+    Window::InitGL();
 }
 
-void Window::RunEventLoop() {
+void Window::RunEventLoop(RenderFunc doRender) {
+    LOG_INFO("RunEventLoop");
+
     while (!glfwWindowShouldClose(_pwindow)) {
+
+        // TODO: better framerate control/measurement
         glfwPollEvents();
+        doRender();
         usleep(1000);
+    }
+}
+
+void Window::InitGL() {
+    static std::atomic<bool> gl_initialised = ATOMIC_FLAG_INIT;
+    if (!gl_initialised.exchange(true)) {
+
+        GLenum err = glewInit();
+        if (err != GLEW_OK)
+            throw RadException(std::format("GLEW Init failed. Err: {}", err));
+
+        glEnable(GL_DEBUG_OUTPUT);
+        glDebugMessageCallback(GLErrorHandler, 0);
+        glDebugMessageControl(GL_DEBUG_SOURCE_OTHER, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+
+        LOG_INFO("OpenGL version: %s", glGetString(GL_VERSION));
     }
 }
 
