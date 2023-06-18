@@ -73,14 +73,18 @@ public:
     ~VertexArray();
 
     VertexArray(const VertexArray& other) = delete;
-    VertexArray(VertexArray&& other) = default;
+    VertexArray(VertexArray&& other);
 
-    void SetVertexBuffer(VertexBuffer&& buffer, const VertexLayout& layout);
+    VertexArray& operator=(VertexArray&& other);
+
+    static VertexArray CreateArray(VertexBuffer&& buffer, const VertexLayout& layout);
+
     VertexBuffer& GetVertexBuffer() { return _buffer; }
 
     void Bind() const;
     void Unbind() const;
 private:
+    void ApplyLayout(const VertexLayout& layout);
 
     unsigned int _vao;
     unsigned int _nattrib;

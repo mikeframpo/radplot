@@ -63,8 +63,10 @@ Window::Window() : _pwindow(nullptr) {
     Window::InitGL();
 }
 
-void Window::RunEventLoop(RenderFunc doRender) {
+void Window::RunEventLoop(RenderFunc doRender, EventHandler& event_handler) {
     LOG_INFO("RunEventLoop");
+
+    AttachEvents(event_handler);
 
     // Note: multiple glfw windows must be created on the main thread, so if we want to support that then we need
     // an 'event' thread or something, in addition to render threads.
@@ -94,6 +96,18 @@ void Window::InitGL() {
 
         LOG_INFO("OpenGL version: %s", glGetString(GL_VERSION));
     }
+}
+
+void Window::AttachEvents(EventHandler& handler) {
+    glfwSetWindowUserPointer(_pwindow, &handler);
+
+    static auto on_cursor_cb = [](GLFWwindow* window, double xpos, double ypos) {
+        EventHandler* handler = reinterpret_cast<EventHandler*>(glfwGetWindowUserPointer(window));
+        MouseMoveEvent event { (int)xpos, (int)ypos, MouseButtons::None };
+        handler->OnMouseMove(event);
+    };
+
+    glfwSetCursorPosCallback(_pwindow, on_cursor_cb);
 }
 
 }  // namespace radplot

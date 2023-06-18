@@ -50,7 +50,7 @@ Renderer::Renderer() : _data(std::make_unique<RenderData>()) {
         VertexLayout layout;
         layout.PushFloatAttr(3, sizeof(QuadVertex), offsetof(QuadVertex, Position));
 
-        _data->QuadsVertexArray.SetVertexBuffer(std::move(vertex_buffer), layout);
+        _data->QuadsVertexArray = VertexArray::CreateArray(std::move(vertex_buffer), layout);
     }
 }
 

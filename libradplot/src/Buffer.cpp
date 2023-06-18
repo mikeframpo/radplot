@@ -67,7 +67,8 @@ void VertexLayout::PushFloatAttr(int count, size_t stride, size_t vertex_offset)
     _attrs.push_back({GL_FLOAT, count, stride, vertex_offset});
 }
 
-VertexArray::VertexArray() : _vao(0), _nattrib(0), _buffer() { glGenVertexArrays(1, &_vao); }
+// Default constructor, no array/buffer allocated.
+VertexArray::VertexArray() : _vao(0), _nattrib(0), _buffer() { }
 
 VertexArray::~VertexArray() {
     if (_vao != 0) {
@@ -75,9 +76,34 @@ VertexArray::~VertexArray() {
     }
 }
 
-void VertexArray::SetVertexBuffer(VertexBuffer&& buffer, const VertexLayout& layout) {
+VertexArray VertexArray::CreateArray(VertexBuffer&& buffer, const VertexLayout& layout) {
+    VertexArray array;
+
+    glGenVertexArrays(1, &array._vao);
+    array._buffer = std::move(buffer);
+
+    array.ApplyLayout(layout);
+    return array;
+}
+
+VertexArray& VertexArray::operator=(VertexArray&& other) {
+    _vao = other._vao;
+    _nattrib = other._nattrib;
+    _buffer = std::move(other._buffer);
+
+    // Set to 0 to prevent buffer free.
+    other._vao = 0;
+    other._nattrib = 0;
+    return *this;
+}
+
+void VertexArray::Bind() const { glBindVertexArray(_vao); }
+
+void VertexArray::Unbind() const { glBindVertexArray(0); }
+
+void VertexArray::ApplyLayout(const VertexLayout& layout) {
+
     Bind();
-    _buffer = std::move(buffer);
     _buffer.Bind();
 
     for (auto& attr : layout.GetLayout()) {
@@ -91,9 +117,5 @@ void VertexArray::SetVertexBuffer(VertexBuffer&& buffer, const VertexLayout& lay
     _buffer.Unbind();
     Unbind();
 }
-
-void VertexArray::Bind() const { glBindVertexArray(_vao); }
-
-void VertexArray::Unbind() const { glBindVertexArray(0); }
 
 }  // namespace radplot

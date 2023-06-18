@@ -5,12 +5,14 @@
 #pragma once
 
 #include "Math.h"
+#include <memory>
 
 namespace radplot {
 
 class Figure {
 public:
     Figure();
+    ~Figure();
 
     // Create a window for the Figure and run its event loop.
     void Show(bool block = true);
@@ -20,7 +22,7 @@ public:
 
 private:
     struct FigureData;
-    FigureData* _pdata;
+    std::unique_ptr<FigureData> _pdata;
 };
 
 }  // namespace radplot
