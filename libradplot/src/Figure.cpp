@@ -1,7 +1,4 @@
-// Radplot
-//
-// Copyright 2023 Mike Frampton
-//
+
 #include "radplot/Figure.h"
 #include "Radplot.h"
 
@@ -20,7 +17,7 @@ struct Figure::FigureData {
 
 Figure::Figure() : _pdata(nullptr) {
     // TODO: move this to an API or defines
-    LogSetLevel(LogLevel::Info);
+    LogSetLevel(LogLevel::Trace);
     LogEnableAllModules();
 
     LOG_INFO("New Figure");
@@ -31,33 +28,17 @@ Figure::Figure() : _pdata(nullptr) {
 void Figure::Show(bool block) {
     // Start up the window on a background thread
     _pdata->_render_thread = std::thread([]() {
-        Renderer renderer;
         auto window = std::make_unique<Window>();
 
+        Renderer renderer;
+        renderer.DrawQuad({0.5, 0.5});
+
         // TODO: pass an EventHandler to the event loop.
-        window->RunEventLoop([&]() { renderer.Render(); });
+        window->RunEventLoop([&]() { renderer.RenderScene(); });
     });
 
     if (block)
         _pdata->_render_thread.join();
-}
-
-void Figure::DrawCube(Vec3 centre) {
-    // TODO
-    // Create some draw data:
-    //  VertexBuffer
-    //  IndexBuffer
-    //  Shaders
-    //  Uniforms
-    // Pass data to the Renderer somehow - command queue? call directly with locking
-
-    // Placeholder
-    float vertices[] = {1.0f, 1.0f,  1.0f,  -1.0f, 1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,
-                        1.0f, -1.0f, -1.0f, 1.0f,  1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f};
-    VertexBuffer buffer(vertices, std::size(vertices) * sizeof(vertices[0]), VBDataUsage::StaticDraw);
-
-    // I think that many objects could be drawn with the same buffers but different uniforms e.g. drawing
-    // many points at different locations (transform in uniform). So we might want to cache buffers.
 }
 
 }  // namespace radplot

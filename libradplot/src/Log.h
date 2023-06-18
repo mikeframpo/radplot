@@ -18,7 +18,9 @@ enum class LogLevel {
 // Module definitions
 #define LOG_MODULES \
     X(Figure, 0)    \
-    X(Window, 1)
+    X(Window, 1)    \
+    X(Renderer, 2)  \
+    X(Shader, 3)
 
 // Generate bitfields for each module
 #define X(module, mask) module = (1 << (mask)),

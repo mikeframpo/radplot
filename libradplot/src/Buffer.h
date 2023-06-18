@@ -16,33 +16,75 @@ public:
     GLBuffer(const GLBuffer& other) = delete;
     GLBuffer(GLBuffer&& other);
 
+    // Allow move assignment
+    GLBuffer& operator=(GLBuffer&&);
+
     ~GLBuffer();
 
     void Bind() const;
     void Unbind() const;
 
 protected:
-    GLBuffer(void* data, size_t size, VBDataUsage usage, unsigned int gl_buffertype);
+    // Default implementation, no buffer allocated.
+    GLBuffer();
 
-private:
-    unsigned int _bufferID;
+    GLBuffer(const void* data, size_t size, VBDataUsage usage, unsigned int gl_buffertype);
+
+    unsigned int _buffer_id;
     unsigned int _buffer_type;
 };
 
 class VertexBuffer : public GLBuffer {
 public:
-    VertexBuffer(void* data, size_t count, VBDataUsage usage);
+    VertexBuffer();
+    VertexBuffer(const void* data, size_t count, VBDataUsage usage);
+
+    void SetData(void* data, size_t count);
 };
 
 class IndexBuffer : public GLBuffer {
 public:
     using IndexT = unsigned int;
-    IndexBuffer(std::vector<IndexT> indices, size_t count);
+    IndexBuffer();
+    IndexBuffer(const std::vector<IndexT>& indices);
+};
 
-    size_t Count() const;
+class VertexLayout {
+public:
+    struct AttrLayout {
+        unsigned int GLType;
+        int AttrCount;
+        size_t Stride;
+        size_t Offset;
+    };
+    using AttrLayoutVec = std::vector<AttrLayout>;
 
+    void PushFloatAttr(int count, size_t stride, size_t vertex_offset);
+
+    const AttrLayoutVec& GetLayout() const { return _attrs; }
 private:
-    size_t _count;
+    AttrLayoutVec _attrs;
+};
+
+class VertexArray
+{
+public:
+    VertexArray();
+    ~VertexArray();
+
+    VertexArray(const VertexArray& other) = delete;
+    VertexArray(VertexArray&& other) = default;
+
+    void SetVertexBuffer(VertexBuffer&& buffer, const VertexLayout& layout);
+    VertexBuffer& GetVertexBuffer() { return _buffer; }
+
+    void Bind() const;
+    void Unbind() const;
+private:
+
+    unsigned int _vao;
+    unsigned int _nattrib;
+    VertexBuffer _buffer;
 };
 
 }  // namespace radplot

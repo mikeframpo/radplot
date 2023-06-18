@@ -39,13 +39,18 @@ void GLAPIENTRY GLErrorHandler(GLenum source,
 Window::Window() : _pwindow(nullptr) {
     LOG_INFO("New Window");
 
+    // TODO: All this stuff can only be called on the main thread, for now only need to support 1 window. Peehaps we
+    //  can create Window on main thread and then move context to background thread.
+
     // Additional calls to glfwInit return immediately.
     if (!glfwInit())
         throw RadException("Failed to initialise GLFW");
 
     glfwSetErrorCallback(GLFWErrorHandler);
     // Set the window hints.
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+
+    // Minimum GL version 4.3 as we're using DebugMessageCallback
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -61,11 +66,16 @@ Window::Window() : _pwindow(nullptr) {
 void Window::RunEventLoop(RenderFunc doRender) {
     LOG_INFO("RunEventLoop");
 
+    // Note: multiple glfw windows must be created on the main thread, so if we want to support that then we need
+    // an 'event' thread or something, in addition to render threads.
+
     while (!glfwWindowShouldClose(_pwindow)) {
 
         // TODO: better framerate control/measurement
-        glfwPollEvents();
         doRender();
+        glfwSwapBuffers(_pwindow);
+        glfwPollEvents();
+
         usleep(1000);
     }
 }

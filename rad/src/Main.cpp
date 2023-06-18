@@ -7,7 +7,10 @@
 
 int main(int argc, char** argv) {
     radplot::Figure figure;
-    figure.Show();
+    figure.Show(true);
 
-    figure.DrawCube({0, 0, 0});
+    // figure.DrawCube({0, 0, 0});
+
+    // radplot::Figure figure2;
+    // figure2.Show(true);
 }
