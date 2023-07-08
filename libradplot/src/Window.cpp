@@ -63,6 +63,11 @@ Window::Window() : _pwindow(nullptr) {
     Window::InitGL();
 }
 
+void Window::GetSize(int* xsize, int* ysize) const {
+    // TODO: cache size and detect window resize event
+    glfwGetWindowSize(_pwindow, xsize, ysize);
+}
+
 void Window::RunEventLoop(RenderFunc doRender, EventHandler& event_handler) {
     LOG_INFO("RunEventLoop");
 
@@ -101,13 +106,84 @@ void Window::InitGL() {
 void Window::AttachEvents(EventHandler& handler) {
     glfwSetWindowUserPointer(_pwindow, &handler);
 
-    static auto on_cursor_cb = [](GLFWwindow* window, double xpos, double ypos) {
+    static auto on_mousebutton_cb = [](GLFWwindow* window, int button, int action, int mods) {
         EventHandler* handler = reinterpret_cast<EventHandler*>(glfwGetWindowUserPointer(window));
-        MouseMoveEvent event { (int)xpos, (int)ypos, MouseButtons::None };
-        handler->OnMouseMove(event);
+        // if pressed and no drag handler already, create one
+        // else if released and drag handler matches released, reset drag handler
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+
+        int ixpos = (int)xpos;
+        int iypos = (int)ypos;
+
+        MouseButtons rbutton = MouseButtons::None;
+        if (button == GLFW_MOUSE_BUTTON_1)
+            rbutton = MouseButtons::Left;
+        else if (button == GLFW_MOUSE_BUTTON_2)
+            rbutton = MouseButtons::Right;
+        else if (button == GLFW_MOUSE_BUTTON_3)
+            rbutton = MouseButtons::Middle;
+
+        if (handler->OnMouseClick)
+            handler->OnMouseClick({ixpos, iypos, rbutton});
+
+        if (action == GLFW_PRESS) {
+            if (!handler->_drag) {
+                // button pressed, create a new drag event
+                handler->_drag = MouseDragEvent{ixpos, iypos, ixpos, iypos, true, rbutton};
+
+                if (handler->OnMouseDrag != nullptr)
+                    handler->OnMouseDrag(*handler->_drag);
+            }
+        } else if (action == GLFW_RELEASE) {
+            if (handler->_drag && rbutton == handler->_drag->Button) {
+                // drag button released, end drag
+                handler->_drag.reset();
+            }
+        }
+    };
+    glfwSetMouseButtonCallback(_pwindow, on_mousebutton_cb);
+
+    static auto on_cursor_cb = [](GLFWwindow* window, double xpos, double ypos) {
+        // get private data ptr.
+        EventHandler* handler = reinterpret_cast<EventHandler*>(glfwGetWindowUserPointer(window));
+
+        auto buttons = MouseButtons::None;
+        auto set_button = [&](int glfw_button, MouseButtons button) {
+            buttons |= (glfwGetMouseButton(window, glfw_button) == GLFW_PRESS) ? button : MouseButtons::None;
+        };
+
+        set_button(GLFW_MOUSE_BUTTON_1, MouseButtons::Left);
+        set_button(GLFW_MOUSE_BUTTON_2, MouseButtons::Right);
+        set_button(GLFW_MOUSE_BUTTON_3, MouseButtons::Middle);
+
+        int ixpos = (int)xpos;
+        int iypos = (int)ypos;
+
+        int xrel = 0;
+        int yrel = 0;
+        if (handler->_x_mouse != -1 && handler->_y_mouse != -1) {
+            xrel = ixpos - handler->_x_mouse;
+            yrel = iypos - handler->_y_mouse;
+        }
+        handler->_x_mouse = ixpos;
+        handler->_y_mouse = iypos;
+
+        MouseMoveEvent event{ixpos, iypos, xrel, yrel, buttons};
+        if (handler->OnMouseMove != nullptr)
+            handler->OnMouseMove(event);
+
+        if (handler->_drag && handler->OnMouseDrag != nullptr) {
+            handler->_drag->XPos = ixpos;
+            handler->_drag->YPos = iypos;
+            handler->_drag->IsDragStart = false;
+            handler->OnMouseDrag(*handler->_drag);
+        }
     };
 
     glfwSetCursorPosCallback(_pwindow, on_cursor_cb);
+
+    // TODO: reset xprev on enter window (callback)
 }
 
 }  // namespace radplot

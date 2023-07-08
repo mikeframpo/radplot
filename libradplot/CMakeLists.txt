@@ -1,9 +1,11 @@
 
 add_library(radplot SHARED
-    src/Figure.cpp
+    src/api/Figure.cpp
+
     src/Log.cpp
     src/Error.cpp
     src/Window.cpp
+    src/FigurePriv.cpp
     src/Renderer.cpp
     src/Buffer.cpp
     src/Shader.cpp

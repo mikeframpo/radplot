@@ -4,6 +4,7 @@
 
 #include "Error.h"
 #include "Window.h"
+#include "FigurePriv.h"
 #include "Log.h"
 #include "Renderer.h"
 #include "Buffer.h"
@@ -18,6 +19,7 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <optional>
 
 #ifndef NDEBUG
 #define DEBUG_ASSERT(condition) \
