@@ -1,8 +1,7 @@
 
 #include <GL/glew.h>
-#include "Radplot.h"
 
-#include "Renderer.h"
+#include "Radplot.h"
 
 namespace radplot {
 
@@ -12,23 +11,46 @@ struct QuadVertex {
     glm::vec3 Position;
 };
 
-template<typename V>
+template <typename VertexData, int max_models, int vertices_per_model>
 struct GeometryData {
+    static constexpr int MaxModels = max_models;
+    static constexpr int VerticesPerModel = vertices_per_model;
 
+    // cpu buffer
+    std::array<VertexData, max_models * vertices_per_model> BufferBase;
+    // indices
+    IndexBuffer Indices;
+    // gpu buffer
+    VertexArray VertArray;
+
+    int ModelCount = 0;
+
+    // TODO: template argument for idx count
+    void InitBuffers(const std::array<uint32_t, 6>& index_vals, const VertexLayout& layout) {
+        // Should this be StaticDraw?
+        VertexBuffer vertex_buffer(BufferBase.data(), sizeof(BufferBase), VBDataUsage::StaticDraw);
+
+        std::vector<uint32_t> indices;
+        indices.reserve(index_vals.size() * max_models);
+
+        for (int iq = 0; iq < max_models; iq++) {
+            for (auto idx : index_vals) {
+                indices.push_back(idx);
+            }
+        }
+        Indices = IndexBuffer(indices);
+
+        // bind the layout to the vao
+        VertArray = VertexArray::CreateArray(std::move(vertex_buffer), layout);
+    }
 };
 
 struct Renderer::RenderData {
-
     // == Quads ==
     static const int MaxQuads = 1;
     static const int VerticesPerQuad = 4;
 
-    // CPU buffer in fixed size array
-    std::array<QuadVertex, MaxQuads * VerticesPerQuad> QuadsBufferBase;
-    IndexBuffer QuadsIndices;
-    VertexArray QuadsVertexArray;
-    Shader QuadShader;
-    int QuadsCount = 0;
+    GeometryData<QuadVertex, MaxQuads, VerticesPerQuad> QuadData;
 };
 
 Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _camera(window) {
@@ -39,28 +61,14 @@ Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _cam
 
     glEnable(GL_DEPTH_TEST);
 
-    // Quads
+    // Quads (templatized)
     {
-        // Should this be StaticDraw?
-        VertexBuffer vertex_buffer(_data->QuadsBufferBase.data(), sizeof(_data->QuadsBufferBase),
-                                   VBDataUsage::StaticDraw);
-
         constexpr std::array<uint32_t, 6> quad_indices{{0, 1, 2, 2, 3, 0}};
-
-        std::vector<uint32_t> indices;
-        indices.reserve(quad_indices.size() * RenderData::MaxQuads);
-
-        for (int iq = 0; iq < RenderData::MaxQuads; iq++) {
-            for (auto idx : quad_indices) {
-                indices.push_back(idx);
-            }
-        }
-        _data->QuadsIndices = IndexBuffer(indices);
 
         VertexLayout layout;
         layout.PushFloatAttr(3, sizeof(QuadVertex), offsetof(QuadVertex, Position));
 
-        _data->QuadsVertexArray = VertexArray::CreateArray(std::move(vertex_buffer), layout);
+        _data->QuadData.InitBuffers(quad_indices, layout);
     }
 
     // Default camera position
@@ -75,19 +83,17 @@ Renderer::~Renderer() {
 }
 
 void Renderer::RenderScene() {
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Quads
     {
         auto& program = Program::LoadProgram("quad");
         program.Bind();
 
-        auto& buffer = _data->QuadsVertexArray.GetVertexBuffer();
-        buffer.SetData(_data->QuadsBufferBase.data(), sizeof(_data->QuadsBufferBase));
+        auto& buffer = _data->QuadData.VertArray.GetVertexBuffer();
+        buffer.SetData(_data->QuadData.BufferBase.data(), sizeof(_data->QuadData.BufferBase));
 
-        _data->QuadsVertexArray.Bind();
-        _data->QuadsIndices.Bind();
+        _data->QuadData.VertArray.Bind();
+        _data->QuadData.Indices.Bind();
 
         // set uniforms
         auto& proj = _camera.GetProjectionMatrix();
@@ -96,7 +102,7 @@ void Renderer::RenderScene() {
         program.SetUniformMat4f("proj", proj);
         program.SetUniformMat4f("view", view);
 
-        glDrawElements(GL_TRIANGLES, 6 * _data->QuadsCount, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 6 * _data->QuadData.ModelCount, GL_UNSIGNED_INT, 0);
     }
 }
 
@@ -104,10 +110,12 @@ void Renderer::DrawQuad(glm::vec2 size) {
     constexpr glm::vec3 quad_positions[]{
         {-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f}};
 
-    if (_data->QuadsCount == RenderData::MaxQuads)
+    if (_data->QuadData.ModelCount == _data->QuadData.MaxModels)
         throw RadException("Exceeded max quads");
 
-    QuadVertex* next = &_data->QuadsBufferBase.at(_data->QuadsCount * 4);
+    QuadVertex* next = &_data->QuadData.BufferBase.at(_data->QuadData.ModelCount * 4);
+
+    // TODO: move vertex copy into Geometry member?
 
     // Copy positions into the vertices
     for (auto& pos : quad_positions) {
@@ -119,7 +127,7 @@ void Renderer::DrawQuad(glm::vec2 size) {
 
         next++;
     }
-    _data->QuadsCount++;
+    _data->QuadData.ModelCount++;
 }
 
 Camera::Camera(Window* window) : _window(window) {}
