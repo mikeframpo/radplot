@@ -37,6 +37,7 @@ void FigurePriv::InitWindow() {
 
     // PENDING: move geometry to API
     _renderer->DrawQuad({0.5, 0.5});
+    _renderer->DrawCube();
 
     _window->RunEventLoop(
         [&]() {

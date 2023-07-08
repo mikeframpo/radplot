@@ -11,10 +11,15 @@ struct QuadVertex {
     glm::vec3 Position;
 };
 
-template <typename VertexData, int max_models, int vertices_per_model>
+struct CubeVertex {
+    glm::vec3 Position;
+};
+
+template <typename VertexData, int max_models, int vertices_per_model, int indices_per_model>
 struct GeometryData {
     static constexpr int MaxModels = max_models;
     static constexpr int VerticesPerModel = vertices_per_model;
+    static constexpr int IndicesPerModel = indices_per_model;
 
     // cpu buffer
     std::array<VertexData, max_models * vertices_per_model> BufferBase;
@@ -26,7 +31,7 @@ struct GeometryData {
     int ModelCount = 0;
 
     // TODO: template argument for idx count
-    void InitBuffers(const std::array<uint32_t, 6>& index_vals, const VertexLayout& layout) {
+    void InitBuffers(const std::array<uint32_t, indices_per_model>& index_vals, const VertexLayout& layout) {
         // Should this be StaticDraw?
         VertexBuffer vertex_buffer(BufferBase.data(), sizeof(BufferBase), VBDataUsage::StaticDraw);
 
@@ -43,14 +48,33 @@ struct GeometryData {
         // bind the layout to the vao
         VertArray = VertexArray::CreateArray(std::move(vertex_buffer), layout);
     }
+
+    const Program& Bind(const char* program_name) {
+        auto& program = Program::LoadProgram(program_name);
+        program.Bind();
+
+        auto& buffer = VertArray.GetVertexBuffer();
+        buffer.SetData(BufferBase.data(), sizeof(BufferBase));
+
+        VertArray.Bind();
+        Indices.Bind();
+
+        return program;
+    }
+
+    void DrawElements() {
+        glDrawElements(GL_TRIANGLES, IndicesPerModel * ModelCount, GL_UNSIGNED_INT, 0);
+    }
 };
 
 struct Renderer::RenderData {
     // == Quads ==
     static const int MaxQuads = 1;
-    static const int VerticesPerQuad = 4;
+    GeometryData<QuadVertex, MaxQuads, 4, 6> QuadData;
 
-    GeometryData<QuadVertex, MaxQuads, VerticesPerQuad> QuadData;
+    // == Cubes
+    static const int MaxCubes = 1;
+    GeometryData<CubeVertex, MaxCubes, 8, 36> CubeData;
 };
 
 Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _camera(window) {
@@ -61,7 +85,7 @@ Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _cam
 
     glEnable(GL_DEPTH_TEST);
 
-    // Quads (templatized)
+    // Quads
     {
         constexpr std::array<uint32_t, 6> quad_indices{{0, 1, 2, 2, 3, 0}};
 
@@ -71,8 +95,19 @@ Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _cam
         _data->QuadData.InitBuffers(quad_indices, layout);
     }
 
+    // Cubes
+    {
+        constexpr std::array<uint32_t, 36> cube_indices{{0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1,
+                                                         1, 6, 7, 1, 7, 2, 7, 4, 3, 7, 3, 2, 4, 7, 6, 4, 6, 5}};
+
+        VertexLayout layout;
+        layout.PushFloatAttr(3, sizeof(CubeVertex), offsetof(CubeVertex, Position));
+
+        _data->CubeData.InitBuffers(cube_indices, layout);
+    }
+
     // Default camera position
-    _camera.SetPosition({0.0, 0.0, 4.0});
+    _camera.SetPosition({0.0, 0.0, 5.0});
     _camera.SetDirection({0.0, 0.0, -1.0});
     _camera.SetUp({0.0, 1.0, 0.0});
 }
@@ -83,17 +118,12 @@ Renderer::~Renderer() {
 }
 
 void Renderer::RenderScene() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+#if 0
     {
-        auto& program = Program::LoadProgram("quad");
-        program.Bind();
-
-        auto& buffer = _data->QuadData.VertArray.GetVertexBuffer();
-        buffer.SetData(_data->QuadData.BufferBase.data(), sizeof(_data->QuadData.BufferBase));
-
-        _data->QuadData.VertArray.Bind();
-        _data->QuadData.Indices.Bind();
+        auto& program = _data->QuadData.Bind("quad");
 
         // set uniforms
         auto& proj = _camera.GetProjectionMatrix();
@@ -102,8 +132,23 @@ void Renderer::RenderScene() {
         program.SetUniformMat4f("proj", proj);
         program.SetUniformMat4f("view", view);
 
-        glDrawElements(GL_TRIANGLES, 6 * _data->QuadData.ModelCount, GL_UNSIGNED_INT, 0);
+        _data->QuadData.DrawElements();
     }
+#endif
+
+#if 1
+    {
+        auto& program = _data->CubeData.Bind("cube");
+
+        auto& proj = _camera.GetProjectionMatrix();
+        auto& view = _camera.GetViewMatrix();
+
+        program.SetUniformMat4f("proj", proj);
+        program.SetUniformMat4f("view", view);
+
+        _data->CubeData.DrawElements();
+    }
+#endif
 }
 
 void Renderer::DrawQuad(glm::vec2 size) {
@@ -113,7 +158,7 @@ void Renderer::DrawQuad(glm::vec2 size) {
     if (_data->QuadData.ModelCount == _data->QuadData.MaxModels)
         throw RadException("Exceeded max quads");
 
-    QuadVertex* next = &_data->QuadData.BufferBase.at(_data->QuadData.ModelCount * 4);
+    QuadVertex* next = &_data->QuadData.BufferBase.at(_data->QuadData.ModelCount * _data->QuadData.VerticesPerModel);
 
     // TODO: move vertex copy into Geometry member?
 
@@ -130,6 +175,23 @@ void Renderer::DrawQuad(glm::vec2 size) {
     _data->QuadData.ModelCount++;
 }
 
+void Renderer::DrawCube() {
+    constexpr glm::vec3 cube_vertices[]{{1.0f, 1.0f, 1.0f},   {-1.0f, 1.0f, 1.0f},  {-1.0f, -1.0f, 1.0f},
+                                        {1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, -1.0f},
+                                        {-1.0f, 1.0f, -1.0f}, {-1.0f, -1.0f, -1.0f}};
+
+    if (_data->CubeData.ModelCount == _data->CubeData.MaxModels)
+        throw RadException("Exceeded max cubes");
+
+    CubeVertex* next = &_data->CubeData.BufferBase.at(_data->CubeData.ModelCount * _data->CubeData.VerticesPerModel);
+    for (auto& pos : cube_vertices) {
+        next->Position = pos;
+
+        next++;
+    }
+
+    _data->CubeData.ModelCount++;
+}
 Camera::Camera(Window* window) : _window(window) {}
 
 const glm::mat4& Camera::GetViewMatrix() {
@@ -143,7 +205,7 @@ const glm::mat4& Camera::GetProjectionMatrix() {
     // TODO: cache window size
     float aspect = (float)size.x / (float)size.y;
 
-    _projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
+    _projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
     return _projection;
 }
 

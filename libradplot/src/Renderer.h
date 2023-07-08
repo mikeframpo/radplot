@@ -44,6 +44,7 @@ public:
     void RenderScene();
 
     void DrawQuad(glm::vec2 size);
+    void DrawCube();
 
 private:
     struct RenderData;
