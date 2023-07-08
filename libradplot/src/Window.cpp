@@ -36,7 +36,7 @@ void GLAPIENTRY GLErrorHandler(GLenum source,
     }
 }
 
-Window::Window() : _pwindow(nullptr) {
+Window::Window() : _pwindow(nullptr), _events(nullptr), _win_size(1024, 768) {
     LOG_INFO("New Window");
 
     // TODO: All this stuff can only be called on the main thread, for now only need to support 1 window. Peehaps we
@@ -54,23 +54,34 @@ Window::Window() : _pwindow(nullptr) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    _pwindow = glfwCreateWindow(1024, 768, "radplot", nullptr, nullptr);
+    _pwindow = glfwCreateWindow(_win_size.x, _win_size.y, "radplot", nullptr, nullptr);
     if (!_pwindow)
         throw RadException("GLFW window creation failed.");
 
+    // Set event handler private data ptr to *this
+    glfwSetWindowUserPointer(_pwindow, this);
+
+    glfwGetWindowSize(_pwindow, &_win_size.x, &_win_size.y);
     glfwMakeContextCurrent(_pwindow);
+
+    static auto winResizeCB = [](GLFWwindow* window, int width, int height) {
+        Window* win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        win->_win_size.x = width;
+        win->_win_size.y = height;
+    };
+    glfwSetWindowSizeCallback(_pwindow, winResizeCB);
 
     Window::InitGL();
 }
 
-void Window::GetSize(int* xsize, int* ysize) const {
-    // TODO: cache size and detect window resize event
-    glfwGetWindowSize(_pwindow, xsize, ysize);
+glm::ivec2 Window::GetSize() const {
+    return _win_size;
 }
 
-void Window::RunEventLoop(RenderFunc doRender, EventHandler& event_handler) {
+void Window::RunEventLoop(RenderFunc doRender, EventHandler* event_handler) {
     LOG_INFO("RunEventLoop");
 
+    DEBUG_ASSERT(event_handler != nullptr);
     AttachEvents(event_handler);
 
     // Note: multiple glfw windows must be created on the main thread, so if we want to support that then we need
@@ -103,11 +114,13 @@ void Window::InitGL() {
     }
 }
 
-void Window::AttachEvents(EventHandler& handler) {
-    glfwSetWindowUserPointer(_pwindow, &handler);
+void Window::AttachEvents(EventHandler* handler) {
+    _events = handler;
 
     static auto on_mousebutton_cb = [](GLFWwindow* window, int button, int action, int mods) {
-        EventHandler* handler = reinterpret_cast<EventHandler*>(glfwGetWindowUserPointer(window));
+        Window* win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        EventHandler* handler = win->_events;
+
         // if pressed and no drag handler already, create one
         // else if released and drag handler matches released, reset drag handler
         double xpos, ypos;
@@ -125,7 +138,7 @@ void Window::AttachEvents(EventHandler& handler) {
             rbutton = MouseButtons::Middle;
 
         if (handler->OnMouseClick)
-            handler->OnMouseClick({ixpos, iypos, rbutton});
+            handler->OnMouseClick({ixpos, iypos, action == GLFW_PRESS, rbutton});
 
         if (action == GLFW_PRESS) {
             if (!handler->_drag) {
@@ -146,7 +159,8 @@ void Window::AttachEvents(EventHandler& handler) {
 
     static auto on_cursor_cb = [](GLFWwindow* window, double xpos, double ypos) {
         // get private data ptr.
-        EventHandler* handler = reinterpret_cast<EventHandler*>(glfwGetWindowUserPointer(window));
+        Window* win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        EventHandler* handler = win->_events;
 
         auto buttons = MouseButtons::None;
         auto set_button = [&](int glfw_button, MouseButtons button) {

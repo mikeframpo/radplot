@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <functional>
 #include <optional>
+#include <glm/glm.hpp>
 
 namespace radplot {
 
@@ -21,6 +22,7 @@ inline constexpr MouseButtons& operator|=(MouseButtons& x, MouseButtons y) {
 struct MouseClickEvent {
     int XPos;
     int YPos;
+    bool Press;
     MouseButtons Button;
 };
 
@@ -61,16 +63,18 @@ public:
 
     // Creates a Window and displays it immediately.
     Window();
-    void GetSize(int* xsize, int* ysize) const;
+    glm::ivec2 GetSize() const;
 
-    void RunEventLoop(RenderFunc doRender, EventHandler& event_handler);
+    void RunEventLoop(RenderFunc doRender, EventHandler* event_handler);
 
 private:
     static void InitGL();
 
-    void AttachEvents(EventHandler& handler);
+    void AttachEvents(EventHandler* handler);
 
     GLFWwindow* _pwindow;
+    EventHandler* _events;
+    glm::ivec2 _win_size;
 };
 
 }  // namespace radplot

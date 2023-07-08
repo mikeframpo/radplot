@@ -4,6 +4,7 @@
 #include "radplot/Figure.h"
 #include "Renderer.h"
 
+#include <glm/glm.hpp>
 #include <thread>
 
 namespace radplot {

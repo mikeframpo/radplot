@@ -12,7 +12,14 @@ struct QuadVertex {
     glm::vec3 Position;
 };
 
+template<typename V>
+struct GeometryData {
+
+};
+
 struct Renderer::RenderData {
+
+    // == Quads ==
     static const int MaxQuads = 1;
     static const int VerticesPerQuad = 4;
 
@@ -123,23 +130,21 @@ const glm::mat4& Camera::GetViewMatrix() {
 }
 
 const glm::mat4& Camera::GetProjectionMatrix() {
-    int width, height;
-    _window->GetSize(&width, &height);
+    glm::ivec2 size = _window->GetSize();
 
     // TODO: cache window size
-    float aspect = (float)width / (float)height;
+    float aspect = (float)size.x / (float)size.y;
 
     _projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
     return _projection;
 }
 
 glm::vec4 Camera::WindowToWorld(int x, int y) {
-    int width, height;
-    _window->GetSize(&width, &height);
+    glm::ivec2 size = _window->GetSize();
 
     // convert to clip space
-    float xclip = 2.0f * (float)x / (float)width - 1.0f;
-    float yclip = 1.0f - 2.0f * (float)y / (float)height;
+    float xclip = 2.0f * (float)x / (float)size.x - 1.0f;
+    float yclip = 1.0f - 2.0f * (float)y / (float)size.y;
 
     auto& view = GetViewMatrix();
     auto& proj = GetProjectionMatrix();
@@ -149,7 +154,8 @@ glm::vec4 Camera::WindowToWorld(int x, int y) {
 
     // find the pixel depth
     float zdepth;
-    glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &zdepth);
+    // TODO: depth doesn't seem to read reliably after panning, what's going on?
+    glReadPixels(x, size.y - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &zdepth);
     // https://stackoverflow.com/questions/7692988
     float zclip = 2.0f * zdepth - 1.0;
     glm::vec4 clip(xclip, yclip, zclip, 1.0);

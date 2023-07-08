@@ -1,9 +1,8 @@
 
 #include "FigurePriv.h"
+#include "Radplot.h"
 
 #include <thread>
-
-#include "Radplot.h"
 
 LOG_MODULE(radplot::LogModule::Figure);
 
@@ -43,7 +42,7 @@ void FigurePriv::InitWindow() {
         [&]() {
             _renderer->RenderScene();
         },
-        events);
+        &events);
 }
 
 void radplot::FigurePriv::InitEvents(EventHandler& events) {
@@ -64,7 +63,8 @@ void FigurePriv::OnMouseClickEvent(MouseClickEvent e) {
     auto& camera = _renderer->GetCamera();
     auto world = camera.WindowToWorld(e.XPos, e.YPos);
 
-    LOG_DEBUG("World: X %f Y %f", world.x, world.y);
+    if (e.Press)
+        LOG_DEBUG("World: (%0.3f, %0.3f, %0.3f)", world.x, world.y, world.z);
 }
 
 void FigurePriv::OnMouseMoveEvent(MouseMoveEvent e) {
@@ -81,11 +81,10 @@ void FigurePriv::OnDragEvent(MouseDragEvent e) {
         _drag_start = camera.GetPosition();
         _drag_scale = click_world.w;
     } else {
-        int xsize, ysize;
-        _window->GetSize(&xsize, &ysize);
+        glm::ivec2 size = _window->GetSize();
 
-        float xmovn = (float)(e.XPos - e.XStart) / xsize;
-        float ymovn = (float)(e.YPos - e.YStart) / ysize;
+        float xmovn = (float)(e.XPos - e.XStart) / size.x;
+        float ymovn = (float)(e.YPos - e.YStart) / size.y;
 
         // TODO: also need to move in the camera look-up plane
         glm::vec3 newPos = _drag_start - (glm::vec3(xmovn * _drag_scale, -ymovn * _drag_scale, 0.0f));
