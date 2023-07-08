@@ -1,15 +1,15 @@
 
 #include "FigurePriv.h"
-#include "Radplot.h"
 
 #include <thread>
+
+#include "Radplot.h"
 
 LOG_MODULE(radplot::LogModule::Figure);
 
 namespace radplot {
 
 FigurePriv::FigurePriv() : _render_thread(), _renderer(), _drag_start(), _drag_scale(1.0) {
-
     // TODO: move this to an API or defines
     LogSetLevel(LogLevel::Debug);
     LogEnableAllModules();
@@ -19,11 +19,13 @@ FigurePriv::FigurePriv() : _render_thread(), _renderer(), _drag_start(), _drag_s
 
 void FigurePriv::Show(bool block) {
     // Start up the window on a background thread
-    _render_thread = std::thread([&]() { InitWindow(); });
+    _render_thread = std::thread([&]() {
+        InitWindow();
+    });
 
     if (block) {
-       _render_thread.join();
-       LOG_INFO("Figure thread completed");
+        _render_thread.join();
+        LOG_INFO("Figure thread completed");
     }
 }
 
@@ -51,7 +53,7 @@ void radplot::FigurePriv::InitEvents(EventHandler& events) {
     events.OnMouseMove = [&](MouseMoveEvent e) {
         OnMouseMoveEvent(e);
     };
-    events.OnMouseDrag = [&](MouseDragEvent e){
+    events.OnMouseDrag = [&](MouseDragEvent e) {
         OnDragEvent(e);
     };
 }
