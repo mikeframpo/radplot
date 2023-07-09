@@ -109,7 +109,7 @@ Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _cam
 
     // Default camera position
     auto& view_state = _camera.GetState();
-    view_state.Pos = {0.0, 0.0, 20.0};
+    view_state.Pos = {0.0, 0.0, 5.0};
     view_state.Centre = {0.0, 0.0, 0.0};
     view_state.Up = {0.0, 1.0, 0.0};
 }
@@ -219,7 +219,9 @@ void Camera::ViewState::Zoom(float dradius) {
     float dist = glm::length(lookV);
     float new_dist = glm::max(dist + dradius, 0.0f);
 
-    Pos = Centre + look_axis * new_dist;
+    // don't want to set Pos == Centre.
+    if (new_dist > 0)
+        Pos = Centre + look_axis * new_dist;
 }
 
 const glm::mat4& Camera::GetViewMatrix() {
