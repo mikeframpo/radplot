@@ -1,6 +1,7 @@
 
 #include <GL/glew.h>
 
+#include "Renderer.h"
 #include "Radplot.h"
 
 namespace radplot {
@@ -107,9 +108,10 @@ Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _cam
     }
 
     // Default camera position
-    _camera.SetPosition({0.0, 0.0, 5.0});
-    _camera.SetDirection({0.0, 0.0, -1.0});
-    _camera.SetUp({0.0, 1.0, 0.0});
+    auto& view_state = _camera.GetState();
+    view_state.Pos = {0.0, 0.0, 5.0};
+    view_state.Centre = {0.0, 0.0, 0.0};
+    view_state.Up = {0.0, 1.0, 0.0};
 }
 
 Renderer::~Renderer() {
@@ -194,9 +196,29 @@ void Renderer::DrawCube() {
 }
 Camera::Camera(Window* window) : _window(window) {}
 
+void Camera::ViewState::Translate(float right, float up) {
+    glm::vec3 up_axis = glm::normalize(Up);
+    glm::vec3 right_axis = glm::normalize(glm::cross(LookVector(), up_axis));
+
+    glm::vec3 translate = right_axis * right + up_axis * up;
+    auto translation = glm::translate(translate);
+    
+    Pos = translation * glm::vec4{ Pos, 1.0f };
+    Centre = translation * glm::vec4{ Centre, 1.0f};
+}
+
+void Camera::ViewState::Rotate(float yaw, float pitch) {
+    // pitch axis is (Up X Look)
+    glm::vec3 pitch_axis = glm::cross(Up, LookVector());
+    auto rotation = glm::rotate(yaw, glm::normalize(Up)) * glm::rotate(pitch, glm::normalize(pitch_axis));
+
+    // do the rotation
+    Pos = rotation * glm::vec4{Pos, 1.0};
+}
+
 const glm::mat4& Camera::GetViewMatrix() {
-    _view = glm::lookAt(_pos, _pos + _direction, _up);
-    return _view;
+    _view_matrix = glm::lookAt(_view_state.Pos, _view_state.Centre, _view_state.Up);
+    return _view_matrix;
 }
 
 const glm::mat4& Camera::GetProjectionMatrix() {

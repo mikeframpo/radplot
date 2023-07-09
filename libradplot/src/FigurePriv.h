@@ -27,7 +27,7 @@ private:
     std::unique_ptr<Window> _window;
     std::unique_ptr<Renderer> _renderer;
 
-    glm::vec3 _drag_start;
+    Camera::ViewState _drag_start;
     float _drag_scale;
 };
 

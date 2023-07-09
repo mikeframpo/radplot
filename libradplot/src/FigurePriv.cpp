@@ -79,17 +79,37 @@ void FigurePriv::OnDragEvent(MouseDragEvent e) {
 
     if (e.IsDragStart) {
         glm::vec4 click_world = camera.WindowToWorld(e.XStart, e.YStart);
-        _drag_start = camera.GetPosition();
+        // Save camera state on drag start.
+        _drag_start = camera.GetState();
         _drag_scale = click_world.w;
+
     } else {
         glm::ivec2 size = _window->GetSize();
 
         float xmovn = (float)(e.XPos - e.XStart) / size.x;
         float ymovn = (float)(e.YPos - e.YStart) / size.y;
 
-        // TODO: also need to move in the camera look-up plane
-        glm::vec3 newPos = _drag_start - (glm::vec3(xmovn * _drag_scale, -ymovn * _drag_scale, 0.0f));
-        camera.SetPosition(newPos);
+        if (e.Button == MouseButtons::Left) {
+            // Left click, pan
+
+            Camera::ViewState translated = _drag_start;
+
+            translated.Translate(xmovn * _drag_scale, ymovn * _drag_scale);
+            camera.SetState(translated);
+
+        } else {
+            // Right click, rotate around the centre
+
+            constexpr float rads_per_screen = 5.0;
+            float xangle = xmovn * rads_per_screen;
+            float yangle = ymovn * rads_per_screen;
+
+            // copy state at start of drag
+            Camera::ViewState rotated = _drag_start;
+
+            rotated.Rotate(-xangle, -yangle);
+            camera.SetState(rotated);
+        }
     }
 }
 

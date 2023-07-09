@@ -9,16 +9,28 @@ namespace radplot {
 
 class Camera {
 public:
+    struct ViewState {
+        glm::vec3 Pos;
+        glm::vec3 Centre;
+        glm::vec3 Up;
+
+        // Vector from the view Pos to the "lookat" Centre.
+        glm::vec3 LookVector() { return Pos - Centre; }
+
+        // Translate by right, up in world. right axis is LookVector * Up
+        void Translate(float right, float up);
+
+        // Rotate around the Centre, in the Up axis (yaw), and then rotate the pitch.
+        void Rotate(float yaw, float pitch);
+    };
+
     Camera(Window* window);
 
     Camera(const Camera& other) = delete;
     Camera& operator=(const Camera& other) = delete;
 
-    glm::vec3 GetPosition() { return _pos; }
-    void SetPosition(glm::vec3 pos) { _pos = pos; }
-
-    void SetDirection(glm::vec3 direction) { _direction = direction; }
-    void SetUp(glm::vec3 up) { _up = up; }
+    ViewState& GetState() { return _view_state; }
+    void SetState(const ViewState& view_state) { _view_state = view_state; }
 
     const glm::mat4& GetViewMatrix();
     const glm::mat4& GetProjectionMatrix();
@@ -27,11 +39,9 @@ public:
 
 private:
     Window* _window;
-    glm::vec3 _pos;
-    glm::vec3 _up;
-    glm::vec3 _direction;
+    ViewState _view_state;
 
-    glm::mat4 _view;
+    glm::mat4 _view_matrix;
     glm::mat4 _projection;
 };
 

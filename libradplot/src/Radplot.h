@@ -16,6 +16,7 @@
 // TODO: selectively include glm headers?
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+#include <glm/gtx/transform.hpp>
 #include <vector>
 #include <array>
 #include <iostream>
