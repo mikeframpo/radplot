@@ -194,10 +194,19 @@ void Window::AttachEvents(EventHandler* handler) {
             handler->OnMouseDrag(*handler->_drag);
         }
     };
-
     glfwSetCursorPosCallback(_pwindow, on_cursor_cb);
 
     // TODO: reset xprev on enter window (callback)
+
+    static auto on_scroll_cb = [](GLFWwindow* window, double xoffset, double yoffset) {
+        Window* win = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        EventHandler* handler = win->_events;
+
+        if (handler->OnMouseScroll){
+            handler->OnMouseScroll({static_cast<float>(yoffset)});
+        }
+    };
+    glfwSetScrollCallback(_pwindow, on_scroll_cb);
 }
 
 }  // namespace radplot

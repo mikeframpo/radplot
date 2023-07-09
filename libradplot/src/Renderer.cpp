@@ -109,7 +109,7 @@ Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _cam
 
     // Default camera position
     auto& view_state = _camera.GetState();
-    view_state.Pos = {0.0, 0.0, 5.0};
+    view_state.Pos = {0.0, 0.0, 20.0};
     view_state.Centre = {0.0, 0.0, 0.0};
     view_state.Up = {0.0, 1.0, 0.0};
 }
@@ -123,7 +123,6 @@ void Renderer::RenderScene() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-#if 0
     {
         auto& program = _data->QuadData.Bind("quad");
 
@@ -136,9 +135,7 @@ void Renderer::RenderScene() {
 
         _data->QuadData.DrawElements();
     }
-#endif
 
-#if 1
     {
         auto& program = _data->CubeData.Bind("cube");
 
@@ -150,7 +147,6 @@ void Renderer::RenderScene() {
 
         _data->CubeData.DrawElements();
     }
-#endif
 }
 
 void Renderer::DrawQuad(glm::vec2 size) {
@@ -214,6 +210,16 @@ void Camera::ViewState::Rotate(float yaw, float pitch) {
 
     // do the rotation
     Pos = rotation * glm::vec4{Pos, 1.0};
+}
+
+void Camera::ViewState::Zoom(float dradius) {
+    auto lookV = LookVector();
+    glm::vec3 look_axis = glm::normalize(lookV);
+
+    float dist = glm::length(lookV);
+    float new_dist = glm::max(dist + dradius, 0.0f);
+
+    Pos = Centre + look_axis * new_dist;
 }
 
 const glm::mat4& Camera::GetViewMatrix() {

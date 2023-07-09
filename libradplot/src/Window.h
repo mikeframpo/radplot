@@ -43,14 +43,20 @@ struct MouseDragEvent {
     MouseButtons Button;
 };
 
+struct MouseScrollEvent {
+    float Scroll;
+};
+
 struct EventHandler {
     using MouseClickCallback = std::function<void(MouseClickEvent)>;
     using MouseMoveCallback = std::function<void(MouseMoveEvent)>;
     using MouseDragCallback = std::function<void(MouseDragEvent)>;
+    using MouseScrollCallback = std::function<void(MouseScrollEvent)>;
 
     MouseClickCallback OnMouseClick = nullptr;
     MouseMoveCallback OnMouseMove = nullptr;
     MouseDragCallback OnMouseDrag = nullptr;
+    MouseScrollCallback OnMouseScroll = nullptr;
 
     int _x_mouse;
     int _y_mouse;

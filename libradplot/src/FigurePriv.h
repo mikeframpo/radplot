@@ -22,6 +22,7 @@ private:
     void OnMouseClickEvent(MouseClickEvent event);
     void OnMouseMoveEvent(MouseMoveEvent event);
     void OnDragEvent(MouseDragEvent event);
+    void OnScrollEvent(MouseScrollEvent event);
 
     std::thread _render_thread;
     std::unique_ptr<Window> _window;

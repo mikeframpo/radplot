@@ -1,8 +1,9 @@
 
 #include "FigurePriv.h"
-#include "Radplot.h"
 
 #include <thread>
+
+#include "Radplot.h"
 
 LOG_MODULE(radplot::LogModule::Figure);
 
@@ -10,7 +11,7 @@ namespace radplot {
 
 FigurePriv::FigurePriv() : _render_thread(), _renderer(), _drag_start(), _drag_scale(1.0) {
     // TODO: move this to an API or defines
-    LogSetLevel(LogLevel::Debug);
+    LogSetLevel(LogLevel::Trace);
     LogEnableAllModules();
 
     LOG_INFO("New Figure");
@@ -36,7 +37,7 @@ void FigurePriv::InitWindow() {
     InitEvents(events);
 
     // PENDING: move geometry to API
-    _renderer->DrawQuad({0.5, 0.5});
+    // _renderer->DrawQuad({1.5, 1.5});
     _renderer->DrawCube();
 
     _window->RunEventLoop(
@@ -55,6 +56,9 @@ void radplot::FigurePriv::InitEvents(EventHandler& events) {
     };
     events.OnMouseDrag = [&](MouseDragEvent e) {
         OnDragEvent(e);
+    };
+    events.OnMouseScroll = [&](MouseScrollEvent e) {
+        OnScrollEvent(e);
     };
 }
 
@@ -111,6 +115,17 @@ void FigurePriv::OnDragEvent(MouseDragEvent e) {
             camera.SetState(rotated);
         }
     }
+}
+
+void FigurePriv::OnScrollEvent(MouseScrollEvent e) {
+    LOG_TRACE("Scroll %f", e.Scroll);
+
+    auto& camera = _renderer->GetCamera();
+
+    Camera::ViewState zoomed = camera.GetState();
+
+    zoomed.Zoom(-e.Scroll);
+    camera.SetState(zoomed);
 }
 
 }  // namespace radplot

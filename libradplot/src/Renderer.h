@@ -10,10 +10,6 @@ namespace radplot {
 class Camera {
 public:
     struct ViewState {
-        glm::vec3 Pos;
-        glm::vec3 Centre;
-        glm::vec3 Up;
-
         // Vector from the view Pos to the "lookat" Centre.
         glm::vec3 LookVector() { return Pos - Centre; }
 
@@ -22,6 +18,13 @@ public:
 
         // Rotate around the Centre, in the Up axis (yaw), and then rotate the pitch.
         void Rotate(float yaw, float pitch);
+
+        // Move the view's radius by dradius from Centre.
+        void Zoom(float dradius);
+
+        glm::vec3 Pos;
+        glm::vec3 Centre;
+        glm::vec3 Up;
     };
 
     Camera(Window* window);
