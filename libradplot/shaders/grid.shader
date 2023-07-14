@@ -35,30 +35,41 @@ uniform mat4 proj;
 out vec4 fragColor;
 
 vec4 grid(vec3 worldPos, float scale) {
-    vec2 grid = abs(fract(worldPos.xz));
-
     float width = 0.05;
-    vec4 color = vec4(1.0, 0.0, 0.0, 0.0);
+
+    vec4 color;
+    if (abs(worldPos.x) < width) {
+        color = vec4(0, 0, 1, 0);
+    } else if (abs(worldPos.z) < width) {
+        color = vec4(1, 0, 0, 0);
+    } else {
+        color = vec4(0, 0, 0, 0);
+    }
+
+
+    vec2 grid = fract(abs(worldPos.xz));
+    // grid.y is actually z-plane :-O
     if (grid.x < width || grid.y < width) {
         color.a = 1.0;
     }
+
     return color;
 }
 
 float getFragDepth(vec3 worldPos) {
     vec4 clipPos = proj * view * vec4(worldPos, 1.0);
-    return clipPos.z / clipPos.w;
+    return (clipPos.z / clipPos.w + 1) / 2;
 }
 
 void main()
 {
     float t = -nearPoint.y / (farPoint.y - nearPoint.y);
-    if (t > 0) {
-        vec3 worldPos = nearPoint + (farPoint - nearPoint) * t;
+    vec3 worldPos = nearPoint + (farPoint - nearPoint) * t;
+    gl_FragDepth = getFragDepth(worldPos);
 
+    if (t > 0) {
         fragColor = grid(worldPos, 1);
-        gl_FragDepth = getFragDepth(worldPos);
     } else {
-        discard;
+        fragColor = vec4(0);
     }
 }
