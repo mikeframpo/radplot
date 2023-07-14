@@ -35,25 +35,26 @@ uniform mat4 proj;
 out vec4 fragColor;
 
 vec4 grid(vec3 worldPos, float scale) {
-    float width = 0.05;
+    vec4 colour = vec4(0);
 
-    vec4 color;
-    if (abs(worldPos.x) < width) {
-        color = vec4(0, 0, 1, 0);
-    } else if (abs(worldPos.z) < width) {
-        color = vec4(1, 0, 0, 0);
-    } else {
-        color = vec4(0, 0, 0, 0);
+    // coord.y is actually z-axis :-O
+    vec2 coord = worldPos.xz;
+
+    // world-space derivative in xz plane, dw/dpx
+    vec2 derivative = fwidth(coord);
+    float linepx = 0.5;
+
+    // grid line is 1.0 wide centred on 0 and multiples of scale.
+    // But in pixel coords
+    // vec2 grid = fract(abs(worldPos.xz) + 0.5) / derivative;
+    vec2 grid = abs(fract(coord - 0.5) - 0.5) / derivative;
+
+    // float line = 
+    if (grid.x < linepx || grid.y < linepx) {
+        colour.a = 1.0;
     }
 
-
-    vec2 grid = fract(abs(worldPos.xz));
-    // grid.y is actually z-plane :-O
-    if (grid.x < width || grid.y < width) {
-        color.a = 1.0;
-    }
-
-    return color;
+    return colour;
 }
 
 float getFragDepth(vec3 worldPos) {
