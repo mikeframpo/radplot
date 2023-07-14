@@ -57,6 +57,7 @@ public:
     void RenderScene();
 
     void DrawQuad(glm::vec2 size);
+    void DrawGrid();
     void DrawCube();
 
 private:

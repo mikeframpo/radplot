@@ -186,9 +186,14 @@ void Program::SetUniformMat4f(const char *name, const glm::mat4 &mat) const {
     DEBUG_ASSERT(IsBound());
 
     int location = glGetUniformLocation(_programID, name);
-    DEBUG_ASSERT(location != -1);
-
-    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+    if (location != -1) {
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+    } else {
+        // Shouldn't be trying to set uniforms that aren't in shader. Shader will likely optimise out variables
+        // that aren't used, so this is pretty easy to trigger accidentally. Don't want to crash though since it's a
+        // pain during development.
+        LOG_ERROR("Failed to set uniform %s", name);
+    }
 }
 
 void Program::Bind() const { glUseProgram(_programID); }

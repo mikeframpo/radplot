@@ -17,10 +17,10 @@ void main()
 // fragment
 #version 330 core
 
-out vec3 color;
+out vec4 color;
 in vec3 vert_pos;
 
 void main()
 {
-    color = vert_pos;
+    color = vec4(vert_pos, 1.0);
 }

@@ -12,12 +12,18 @@ struct QuadVertex {
     glm::vec3 Position;
 };
 
+struct GridVertex {
+    glm::vec3 Position;
+};
+
 struct CubeVertex {
     glm::vec3 Position;
 };
 
 template <typename VertexData, int max_models, int vertices_per_model, int indices_per_model>
 struct GeometryData {
+    using VertexType = VertexData;
+
     static constexpr int MaxModels = max_models;
     static constexpr int VerticesPerModel = vertices_per_model;
     static constexpr int IndicesPerModel = indices_per_model;
@@ -63,15 +69,17 @@ struct GeometryData {
         return program;
     }
 
-    void DrawElements() {
-        glDrawElements(GL_TRIANGLES, IndicesPerModel * ModelCount, GL_UNSIGNED_INT, 0);
-    }
+    void DrawElements() { glDrawElements(GL_TRIANGLES, IndicesPerModel * ModelCount, GL_UNSIGNED_INT, 0); }
 };
 
 struct Renderer::RenderData {
     // == Quads ==
     static const int MaxQuads = 1;
     GeometryData<QuadVertex, MaxQuads, 4, 6> QuadData;
+
+    // == Grids ==
+    static const int MaxGrids = 1;
+    GeometryData<GridVertex, MaxGrids, 4, 6> GridData;
 
     // == Cubes
     static const int MaxCubes = 1;
@@ -85,15 +93,27 @@ Renderer::Renderer(Window* window) : _data(std::make_unique<RenderData>()), _cam
     LOG_TRACE("sizeof(Renderdata)=%d bytes", sizeof(RenderData));
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Quads
     {
         constexpr std::array<uint32_t, 6> quad_indices{{0, 1, 2, 2, 3, 0}};
 
-        VertexLayout layout;
-        layout.PushFloatAttr(3, sizeof(QuadVertex), offsetof(QuadVertex, Position));
+        {
+            VertexLayout layout;
+            layout.PushFloatAttr(3, sizeof(QuadVertex), offsetof(QuadVertex, Position));
 
-        _data->QuadData.InitBuffers(quad_indices, layout);
+            _data->QuadData.InitBuffers(quad_indices, layout);
+        }
+
+        {
+            VertexLayout layout;
+            layout.PushFloatAttr(3, sizeof(GridVertex), offsetof(GridVertex, Position));
+
+            // grid is rendered as a quad covering the whole viewport
+            _data->GridData.InitBuffers(quad_indices, layout);
+        }
     }
 
     // Cubes
@@ -123,6 +143,37 @@ void Renderer::RenderScene() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+#if 1
+    {
+        auto& program = _data->CubeData.Bind("cube");
+
+        auto& proj = _camera.GetProjectionMatrix();
+        auto& view = _camera.GetViewMatrix();
+
+        program.SetUniformMat4f("proj", proj);
+        program.SetUniformMat4f("view", view);
+
+        _data->CubeData.DrawElements();
+    }
+#endif
+
+#if 1
+    {
+        // Render the grid.
+        auto& program = _data->GridData.Bind("grid");
+
+        auto& proj = _camera.GetProjectionMatrix();
+        auto& view = _camera.GetViewMatrix();
+
+        auto ipv = glm::inverse(proj * view);
+        program.SetUniformMat4f("view", view);
+        program.SetUniformMat4f("proj", proj);
+
+        _data->GridData.DrawElements();
+    }
+#endif
+
+#if 0
     {
         auto& program = _data->QuadData.Bind("quad");
 
@@ -135,28 +186,21 @@ void Renderer::RenderScene() {
 
         _data->QuadData.DrawElements();
     }
+#endif
 
-    {
-        auto& program = _data->CubeData.Bind("cube");
-
-        auto& proj = _camera.GetProjectionMatrix();
-        auto& view = _camera.GetViewMatrix();
-
-        program.SetUniformMat4f("proj", proj);
-        program.SetUniformMat4f("view", view);
-
-        _data->CubeData.DrawElements();
-    }
 }
 
-void Renderer::DrawQuad(glm::vec2 size) {
+template <typename TGeometryData>
+void DrawQuadTo(TGeometryData& data, glm::vec2 size) {
+    // 0, 1, 2, 2, 3, 0
     constexpr glm::vec3 quad_positions[]{
         {-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f}};
 
-    if (_data->QuadData.ModelCount == _data->QuadData.MaxModels)
+    if (data.ModelCount == data.MaxModels)
         throw RadException("Exceeded max quads");
 
-    QuadVertex* next = &_data->QuadData.BufferBase.at(_data->QuadData.ModelCount * _data->QuadData.VerticesPerModel);
+    using VertexType = decltype(data.BufferBase)::value_type;
+    VertexType* next = &data.BufferBase.at(data.ModelCount * data.VerticesPerModel);
 
     // TODO: move vertex copy into Geometry member?
 
@@ -170,7 +214,15 @@ void Renderer::DrawQuad(glm::vec2 size) {
 
         next++;
     }
-    _data->QuadData.ModelCount++;
+    data.ModelCount++;
+}
+
+void Renderer::DrawQuad(glm::vec2 size) {
+    DrawQuadTo(_data->QuadData, size);
+}
+
+void Renderer::DrawGrid() {
+    DrawQuadTo(_data->GridData, {1.0, 1.0});
 }
 
 void Renderer::DrawCube() {
@@ -198,9 +250,9 @@ void Camera::ViewState::Translate(float right, float up) {
 
     glm::vec3 translate = right_axis * right + up_axis * up;
     auto translation = glm::translate(translate);
-    
-    Pos = translation * glm::vec4{ Pos, 1.0f };
-    Centre = translation * glm::vec4{ Centre, 1.0f};
+
+    Pos = translation * glm::vec4{Pos, 1.0f};
+    Centre = translation * glm::vec4{Centre, 1.0f};
 }
 
 void Camera::ViewState::Rotate(float yaw, float pitch) {

@@ -21,6 +21,7 @@
 #include <array>
 #include <iostream>
 #include <optional>
+#include <algorithm>
 
 #ifndef NDEBUG
 #define DEBUG_ASSERT(condition) \
