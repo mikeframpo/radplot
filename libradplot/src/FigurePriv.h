@@ -24,6 +24,9 @@ private:
     void OnDragEvent(MouseDragEvent event);
     void OnScrollEvent(MouseScrollEvent event);
 
+    // Log on window or input events.
+    static constexpr bool LogEvents = false;
+
     std::thread _render_thread;
     std::unique_ptr<Window> _window;
     std::unique_ptr<Renderer> _renderer;

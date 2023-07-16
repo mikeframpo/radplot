@@ -42,6 +42,11 @@ enum class LogModule {
 #define LOG_INFO(format, ...) Log::LogLine(LogLevel::Info, format "\n" __VA_OPT__(, ) __VA_ARGS__)
 #define LOG_ERROR(format, ...) Log::LogLine(LogLevel::Error, format "\n" __VA_OPT__(, ) __VA_ARGS__)
 
+#define LOG_TRACE_IF(condition, format, ...) Log::LogLineIf(condition, LogLevel::Trace, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_DEBUG_IF(condition, format, ...) Log::LogLineIf(condition, LogLevel::Debug, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_INFO_IF(condition, format, ...) Log::LogLineIf(condition, LogLevel::Info, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_ERROR_IF(condition, format, ...) Log::LogLineIf(condition, LogLevel::Error, format "\n" __VA_OPT__(, ) __VA_ARGS__)
+
 // Public functions
 void LogSetLevel(LogLevel level);
 void LogEnableModule(LogModule module);
@@ -61,6 +66,16 @@ class Logger {
 public:
     static void LogLine(LogLevel level, const char* format...) {
         if (_moduleMask & static_cast<unsigned int>(module)) {
+            va_list args;
+            va_start(args, format);
+
+            LogLineImpl(module, level, format, args);
+            va_end(args);
+        }
+    }
+
+    static void LogLineIf(bool condition, LogLevel level, const char* format...) {
+        if (condition && (_moduleMask & static_cast<unsigned int>(module))) {
             va_list args;
             va_start(args, format);
 

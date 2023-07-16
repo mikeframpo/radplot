@@ -65,7 +65,7 @@ void radplot::FigurePriv::InitEvents(EventHandler& events) {
 }
 
 void FigurePriv::OnMouseClickEvent(MouseClickEvent e) {
-    LOG_TRACE("MouseClick: X %d Y %d B %d", e.XPos, e.YPos, e.Button);
+    LOG_TRACE_IF(LogEvents, "MouseClick: X %d Y %d B %d", e.XPos, e.YPos, e.Button);
 
     auto& camera = _renderer->GetCamera();
     auto world = camera.WindowToWorld(e.XPos, e.YPos);
@@ -75,12 +75,12 @@ void FigurePriv::OnMouseClickEvent(MouseClickEvent e) {
 }
 
 void FigurePriv::OnMouseMoveEvent(MouseMoveEvent e) {
-    LOG_TRACE("MouseMove: X %d Y %d B %d", e.XPos, e.YPos);
+    LOG_TRACE_IF(LogEvents, "MouseMove: X %d Y %d B %d", e.XPos, e.YPos);
     // Implement me
 }
 
 void FigurePriv::OnDragEvent(MouseDragEvent e) {
-    LOG_TRACE("MouseDrag Member: X %d, Y %d, Xst %d Yst %d B %d", e.XPos, e.YPos, e.XStart, e.YStart, e.Button);
+    LOG_TRACE_IF(LogEvents, "MouseDrag Member: X %d, Y %d, Xst %d Yst %d B %d", e.XPos, e.YPos, e.XStart, e.YStart, e.Button);
     auto& camera = _renderer->GetCamera();
 
     if (e.IsDragStart) {
@@ -120,7 +120,7 @@ void FigurePriv::OnDragEvent(MouseDragEvent e) {
 }
 
 void FigurePriv::OnScrollEvent(MouseScrollEvent e) {
-    LOG_TRACE("Scroll %f", e.Scroll);
+    LOG_TRACE_IF(LogEvents, "Scroll %f", e.Scroll);
 
     auto& camera = _renderer->GetCamera();
 
