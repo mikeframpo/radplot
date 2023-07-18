@@ -6,6 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include <format>
+#include <cstdlib>
+#include <filesystem>
 
 namespace radplot {
 
@@ -69,6 +71,20 @@ private:
     std::optional<ShaderType> _cur_type;
 };
 
+std::string FindShaderPath(const char* name) {
+    // read env variable
+    const char* env = "RADPLOT_SHADER_PATH";
+    const char* shader_path = std::getenv(env);
+    if (shader_path == nullptr) {
+        throw RadException{std::format("Environment variable {} is not defined.", env)};
+    }
+
+    std::filesystem::path shader_file(shader_path);
+    shader_file.append(std::format("{}.shader", name));
+
+    return shader_file.string();
+}
+
 Shader Shader::CreateFromStr(const std::string &src, ShaderType type) {
     const char *cstr = src.c_str();
     GLint strlen = src.size();
@@ -123,7 +139,7 @@ Program::Program() : _programID(0), _vertex(), _fragment() { _programID = glCrea
 
 const Program &Program::LoadProgram(const char *name) {
     if (!_program_cache.contains(name)) {
-        std::string filename = std::string("../../libradplot/shaders/") + name + ".shader";
+        std::string filename = FindShaderPath(name);
         std::ifstream file(filename);
 
         if (!file.is_open())

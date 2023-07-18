@@ -14,5 +14,8 @@ add_subdirectory(libradplot)
 # test app
 add_subdirectory(rad)
 
+# Python API
+add_subdirectory(python)
+
 
 set_property(TARGET radplot PROPERTY CXX_STANDARD 20)
