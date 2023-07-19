@@ -30,8 +30,9 @@ void FigurePriv::Show(bool block) {
 }
 
 void FigurePriv::InitWindow() {
-    _window = std::make_unique<Window>();
-    _renderer = std::make_unique<Renderer>(_window.get());
+    // Window as an automatic
+    Window window;
+    _renderer = std::make_unique<Renderer>(&window);
 
     EventHandler events;
     InitEvents(events);
@@ -42,11 +43,14 @@ void FigurePriv::InitWindow() {
     // _renderer->DrawQuad({1.5, 1.5});
     _renderer->DrawCube();
 
-    _window->RunEventLoop(
+    window.RunEventLoop(
         [&]() {
             _renderer->RenderScene();
         },
         &events);
+
+    _renderer = nullptr;
+    LOG_INFO("Window closing");
 }
 
 void radplot::FigurePriv::InitEvents(EventHandler& events) {
@@ -90,7 +94,7 @@ void FigurePriv::OnDragEvent(MouseDragEvent e) {
         _drag_scale = click_world.w;
 
     } else {
-        glm::ivec2 size = _window->GetSize();
+        glm::ivec2 size = camera.GetWindowSize();
 
         float xmovn = (float)(e.XPos - e.XStart) / size.x;
         float ymovn = (float)(e.YPos - e.YStart) / size.y;

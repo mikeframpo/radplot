@@ -17,8 +17,8 @@ librp.CreateFigure.restype = ctypes.c_int
 librp.CreateFigure()
 
 # required when running this as a script
-while True:
-    time.sleep(1)
+# while True:
+#     time.sleep(1)
 
 # from repo root, run
 # RADPLOT_SHADER_PATH=./libradplot/shaders/ python python/radplot/radplot.py

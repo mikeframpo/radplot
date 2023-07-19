@@ -69,6 +69,7 @@ public:
 
     // Creates a Window and displays it immediately.
     Window();
+    ~Window();
     glm::ivec2 GetSize() const;
 
     void RunEventLoop(RenderFunc doRender, EventHandler* event_handler);

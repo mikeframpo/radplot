@@ -291,6 +291,10 @@ const glm::mat4& Camera::GetProjectionMatrix() {
     return _projection;
 }
 
+glm::ivec2 Camera::GetWindowSize() const {
+    return _window->GetSize();
+}
+
 glm::vec4 Camera::WindowToWorld(int x, int y) {
     glm::ivec2 size = _window->GetSize();
 

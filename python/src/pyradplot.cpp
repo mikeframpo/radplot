@@ -15,9 +15,9 @@ void PrintArray(double *v, size_t n) {
 }
 */
 
-void *CreateFigure() {
+Figure *CreateFigure() {
     radplot::Figure* figure = new radplot::Figure();
     figure->Show(false);
 
-    return figure;
+    return (Figure*)figure;
 }

@@ -5,5 +5,7 @@
 #pragma once
 
 extern "C" {
-    void* CreateFigure();
+    typedef struct Figure Figure;
+
+    Figure* CreateFigure();
 }

@@ -28,7 +28,6 @@ private:
     static constexpr bool LogEvents = false;
 
     std::thread _render_thread;
-    std::unique_ptr<Window> _window;
     std::unique_ptr<Renderer> _renderer;
 
     Camera::ViewState _drag_start;

@@ -74,6 +74,10 @@ Window::Window() : _pwindow(nullptr), _events(nullptr), _win_size(1024, 768) {
     Window::InitGL();
 }
 
+Window::~Window() {
+    glfwDestroyWindow(_pwindow);
+}
+
 glm::ivec2 Window::GetSize() const {
     return _win_size;
 }

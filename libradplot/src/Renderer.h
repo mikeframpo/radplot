@@ -38,6 +38,7 @@ public:
     const glm::mat4& GetViewMatrix();
     const glm::mat4& GetProjectionMatrix();
 
+    glm::ivec2 GetWindowSize() const;
     glm::vec4 WindowToWorld(int x, int y);
 
 private:
