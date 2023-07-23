@@ -16,9 +16,11 @@ public:
 
     // Create a window for the Figure and run its event loop.
     void Show(bool block = true);
+    void WaitForClose();
 
     // TODO: maybe this should return a non-const entity, so that it can be modified in place
     void DrawCube(Vec3 centre);
+    void DrawQuad(Vec3 centre);
 
 private:
     struct FigureData;

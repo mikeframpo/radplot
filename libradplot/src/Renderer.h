@@ -57,7 +57,7 @@ public:
     Camera& GetCamera() { return _camera; }
     void RenderScene();
 
-    void DrawQuad(glm::vec2 size);
+    void DrawQuad(const glm::mat4& model);
     void DrawGrid();
     void DrawCube();
 

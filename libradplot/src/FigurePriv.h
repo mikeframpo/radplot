@@ -14,6 +14,8 @@ public:
     FigurePriv();
 
     void Show(bool block = true);
+    Renderer* GetRenderer() const;
+    void WaitForClose();
 
 private:
     void InitWindow();

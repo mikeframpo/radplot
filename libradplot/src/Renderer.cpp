@@ -46,8 +46,9 @@ struct GeometryData {
         indices.reserve(index_vals.size() * max_models);
 
         for (int iq = 0; iq < max_models; iq++) {
+            int vert_base_idx = iq * vertices_per_model;
             for (auto idx : index_vals) {
-                indices.push_back(idx);
+                indices.push_back(vert_base_idx + idx);
             }
         }
         Indices = IndexBuffer(indices);
@@ -74,7 +75,7 @@ struct GeometryData {
 
 struct Renderer::RenderData {
     // == Quads ==
-    static const int MaxQuads = 1;
+    static const int MaxQuads = 2;
     GeometryData<QuadVertex, MaxQuads, 4, 6> QuadData;
 
     // == Grids ==
@@ -143,7 +144,7 @@ void Renderer::RenderScene() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-#if 1
+#if 0
     {
         auto& program = _data->CubeData.Bind("cube");
 
@@ -154,6 +155,21 @@ void Renderer::RenderScene() {
         program.SetUniformMat4f("view", view);
 
         _data->CubeData.DrawElements();
+    }
+#endif
+
+#if 1
+    {
+        auto& program = _data->QuadData.Bind("quad");
+
+        // set uniforms
+        auto& proj = _camera.GetProjectionMatrix();
+        auto& view = _camera.GetViewMatrix();
+
+        program.SetUniformMat4f("proj", proj);
+        program.SetUniformMat4f("view", view);
+
+        _data->QuadData.DrawElements();
     }
 #endif
 
@@ -173,25 +189,10 @@ void Renderer::RenderScene() {
     }
 #endif
 
-#if 0
-    {
-        auto& program = _data->QuadData.Bind("quad");
-
-        // set uniforms
-        auto& proj = _camera.GetProjectionMatrix();
-        auto& view = _camera.GetViewMatrix();
-
-        program.SetUniformMat4f("proj", proj);
-        program.SetUniformMat4f("view", view);
-
-        _data->QuadData.DrawElements();
-    }
-#endif
-
 }
 
 template <typename TGeometryData>
-void DrawQuadTo(TGeometryData& data, glm::vec2 size) {
+void DrawQuadTo(TGeometryData& data, const glm::mat4& model) {
     // 0, 1, 2, 2, 3, 0
     constexpr glm::vec3 quad_positions[]{
         {-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f}};
@@ -206,10 +207,7 @@ void DrawQuadTo(TGeometryData& data, glm::vec2 size) {
 
     // Copy positions into the vertices
     for (auto& pos : quad_positions) {
-        next->Position = pos;
-
-        next->Position.x *= size.x;
-        next->Position.y *= size.y;
+        next->Position = model * glm::vec4(pos.x, pos.y, pos.z, 1.0);
         // no scaling in z
 
         next++;
@@ -217,12 +215,12 @@ void DrawQuadTo(TGeometryData& data, glm::vec2 size) {
     data.ModelCount++;
 }
 
-void Renderer::DrawQuad(glm::vec2 size) {
-    DrawQuadTo(_data->QuadData, size);
+void Renderer::DrawQuad(const glm::mat4& model) {
+    DrawQuadTo(_data->QuadData, model);
 }
 
 void Renderer::DrawGrid() {
-    DrawQuadTo(_data->GridData, {1.0, 1.0});
+    DrawQuadTo(_data->GridData, glm::mat4(1));
 }
 
 void Renderer::DrawCube() {

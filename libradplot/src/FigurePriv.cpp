@@ -24,9 +24,17 @@ void FigurePriv::Show(bool block) {
     });
 
     if (block) {
-        _render_thread.join();
-        LOG_INFO("Figure thread completed");
+        WaitForClose();
     }
+}
+
+Renderer* FigurePriv::GetRenderer() const {
+    return _renderer.get();
+}
+
+void FigurePriv::WaitForClose() {
+    _render_thread.join();
+    LOG_INFO("Figure thread completed");
 }
 
 void FigurePriv::InitWindow() {
@@ -41,7 +49,7 @@ void FigurePriv::InitWindow() {
 
     // PENDING: move geometry to API
     // _renderer->DrawQuad({1.5, 1.5});
-    _renderer->DrawCube();
+    // _renderer->DrawCube();
 
     window.RunEventLoop(
         [&]() {
@@ -84,7 +92,8 @@ void FigurePriv::OnMouseMoveEvent(MouseMoveEvent e) {
 }
 
 void FigurePriv::OnDragEvent(MouseDragEvent e) {
-    LOG_TRACE_IF(LogEvents, "MouseDrag Member: X %d, Y %d, Xst %d Yst %d B %d", e.XPos, e.YPos, e.XStart, e.YStart, e.Button);
+    LOG_TRACE_IF(LogEvents, "MouseDrag Member: X %d, Y %d, Xst %d Yst %d B %d", e.XPos, e.YPos, e.XStart, e.YStart,
+                 e.Button);
     auto& camera = _renderer->GetCamera();
 
     if (e.IsDragStart) {
