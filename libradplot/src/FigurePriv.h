@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "radplot/Figure.h"
+#include "Figure.h"
 #include "Renderer.h"
 
 #include <glm/glm.hpp>

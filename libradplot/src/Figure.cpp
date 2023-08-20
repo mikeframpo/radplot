@@ -1,6 +1,6 @@
 
-#include "radplot/Figure.h"
-#include "../Radplot.h"
+#include "Figure.h"
+#include "Radplot.h"
 
 namespace {}  // namespace
 

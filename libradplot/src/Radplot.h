@@ -10,8 +10,8 @@
 #include "Buffer.h"
 #include "Shader.h"
 
-#include "radplot/Figure.h"
-#include "radplot/Math.h"
+#include "Figure.h"
+#include "Math.h"
 
 // TODO: selectively include glm headers?
 #include <glm/glm.hpp>

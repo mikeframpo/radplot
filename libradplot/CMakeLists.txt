@@ -1,7 +1,6 @@
 
 add_library(radplot SHARED
-    src/api/Figure.cpp
-
+    src/Figure.cpp
     src/Log.cpp
     src/Error.cpp
     src/Window.cpp
@@ -12,7 +11,7 @@ add_library(radplot SHARED
 )
 
 # Public interface headers are defined in the include/ directory
-target_include_directories(radplot PUBLIC ./include)
+target_include_directories(radplot PUBLIC ./src)
 
 # add include paths for 3rd party libraries
 target_include_directories(radplot PRIVATE ../lib)

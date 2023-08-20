@@ -1,7 +1,7 @@
 
 #include "pyradplot.h"
 
-#include "radplot/Figure.h"
+#include "Figure.h"
 
 #include <cstdio>
 

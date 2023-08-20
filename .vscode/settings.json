@@ -1,7 +1,8 @@
 {
     "files.associations": {
         "format": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "streambuf": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
